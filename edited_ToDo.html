@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List</title>
+    <title>Chat</title>
     <style>
-        
         * {
             margin: 0;
             padding: 0;
-            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            font-family: Comic Sans MS;
+            background-color: #f2f2f2;
+            font-weight: lighter;
         }
         ul {
             list-style-type: none;
             padding: 0;
-            text-align: center;
             margin: 10px 0;
+            text-align: center;
         }
         li {
             position: relative;
@@ -37,13 +38,11 @@
             background-color: #f1f1f1;
         }
         .header {
-            background-image: url('https://i.pinimg.com/736x/4b/7d/0a/4b7d0ad9deeeb8fad8f43b12425f6cb9.jpg');
-            background-repeat: no-repeat;
-            background-size: cover;
             text-align: center;
         }
         .head {
             padding: 30px;
+            font-size: 20px;
         }
         .addChecklistBtn {
             border: none;
@@ -55,27 +54,29 @@
             background-color: rgb(126, 61, 61);
             color: white;
             font-weight: bolder;
-
         }
-        #addBtn{
-            border: none;
-            width: 150px;
-            height: 30px;
-            padding: 3px;
+        #taskInput { 
+            height: 30px; 
+            width: 300px; 
+            padding: 3px; 
+            border: none; 
             border-radius: 5%;
-            box-shadow: 2px 2px 2px black;
-            background-color: rgb(126, 61, 61);
+            box-shadow: 2px 2px 2px black; 
+            box-sizing: border-box; 
+            display: inline-block;
+        }
+        #addBtn { 
+            border: none; 
+            height: 32px; 
+            padding: 0 20px; 
+            border-radius: 5%; 
+            box-shadow: 2px 2px 2px black; 
+            background-color: rgb(126, 61, 61); 
             color: white;
             font-weight: bolder;
-            margin-top: 3%;
-        }
-        #taskInput {
-            height: 20px;
-            width: 300px;
-            padding: 3px;
-            border: none;
-            border-radius: 5%;
-            box-shadow: 2px 2px 2px black;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: top; 
         }
         .completed {
             text-decoration: line-through;
@@ -100,8 +101,33 @@
             text-align: center;
         }
         .checklistContainer h2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
         }
+        .resizedTextbox {
+            flex-grow: 1; /* Allow the textbox to grow and fill the available space */
+            height: 30px;
+            padding: 5px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            margin-right: 10px; /* Space between the input and delete button */
+        }
+        .deleteChecklistBtn {
+            width: 50px;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 2px 2px 2px black;
+            background-color: rgb(126, 61, 61);
+            color: white;
+            font-weight: bolder;
+            text-align: center;
+        }
+        
     </style>
 </head>
 <body>
@@ -115,14 +141,47 @@
     <div id="checklistContainerWrapper"></div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", loadChecklists);
+
+        function loadChecklists() {
+            const savedChecklists = JSON.parse(localStorage.getItem("checklists")) || [];
+            savedChecklists.forEach(checklist => {
+                const checklistContainer = createChecklistElement(checklist.title, checklist.tasks);
+                document.getElementById("checklistContainerWrapper").appendChild(checklistContainer);
+            });
+        }
+
+        function saveChecklists() {
+            const checklists = [];
+            document.querySelectorAll(".checklistContainer").forEach(checklistContainer => {
+                const title = checklistContainer.querySelector("input.resizedTextbox").value;
+                const tasks = [];
+                checklistContainer.querySelectorAll("li").forEach(task => {
+                    tasks.push({
+                        text: task.querySelector("span").textContent,
+                        completed: task.querySelector("span").classList.contains("completed")
+                    });
+                });
+                checklists.push({ title, tasks });
+            });
+            localStorage.setItem("checklists", JSON.stringify(checklists));
+        }
+
         function addChecklist() {
             const checklistContainerWrapper = document.getElementById("checklistContainerWrapper");
+            const checklistContainer = createChecklistElement("", []);
+            checklistContainerWrapper.appendChild(checklistContainer);
+            saveChecklists();
+            
+        }
 
+        function createChecklistElement(title, tasks) {
             const checklistContainer = document.createElement("div");
             checklistContainer.className = "checklistContainer";
 
             const checklistTitle = document.createElement("h2");
-            checklistTitle.textContent = "New Checklist";
+            checklistTitle.innerHTML = `<input type='text' class='resizedTextbox' placeholder='Checklist Title' value='${title}'>
+                                        <button class='deleteChecklistBtn'>X</button>`;
             checklistContainer.appendChild(checklistTitle);
 
             const taskInput = document.createElement("input");
@@ -140,11 +199,34 @@
             const taskList = document.createElement("ul");
             taskList.id = "taskList";
 
+            tasks.forEach(task => {
+                const listItem = document.createElement("li");
+                const taskTextNode = document.createElement("span");
+                taskTextNode.textContent = task.text;
+                if (task.completed) taskTextNode.classList.add("completed");
+                const closeBtn = document.createElement("span");
+                closeBtn.className = "close";
+                closeBtn.textContent = "×";
+                closeBtn.onclick = function() {
+                    listItem.remove();
+                    saveChecklists();
+                };
+                listItem.appendChild(taskTextNode);
+                listItem.appendChild(closeBtn);
+                taskList.appendChild(listItem);
+            });
+
+            const deleteBtn = checklistTitle.querySelector(".deleteChecklistBtn");
+            deleteBtn.onclick = function() {
+                checklistContainer.remove();
+                saveChecklists();
+            };
+
             checklistContainer.appendChild(taskInput);
             checklistContainer.appendChild(addBtn);
             checklistContainer.appendChild(taskList);
 
-            checklistContainerWrapper.appendChild(checklistContainer);
+            return checklistContainer;
         }
 
         function addTask(checklistContainer) {
@@ -155,30 +237,108 @@
                 const listItem = document.createElement("li");
 
                 const taskTextNode = document.createElement("span");
-                taskTextNode.appendChild(document.createTextNode(taskText));
+                taskTextNode.textContent = taskText;
 
                 const closeBtn = document.createElement("span");
                 closeBtn.className = "close";
-                closeBtn.appendChild(document.createTextNode("×"));
+                closeBtn.textContent = "×";
                 closeBtn.onclick = function() {
                     listItem.remove();
+                    saveChecklists();
                 };
 
                 listItem.appendChild(taskTextNode);
                 listItem.appendChild(closeBtn);
 
-                const taskList = checklistContainer.querySelector("#taskList");
+                const taskList = checklistContainer.querySelector("ul");
                 taskList.appendChild(listItem);
 
                 taskInput.value = "";
+
+                saveChecklists();
             }
         }
 
         document.addEventListener("click", function(event) {
             if (event.target.tagName === 'SPAN' && event.target.className !== 'close') {
                 event.target.classList.toggle("completed");
+                saveChecklists();
             }
         });
+        function createChecklistElement(title, tasks) {
+    const checklistContainer = document.createElement("div");
+    checklistContainer.className = "checklistContainer";
+
+    const checklistTitle = document.createElement("h2");
+    const titleInput = document.createElement("input");
+    titleInput.type = 'text';
+    titleInput.className = 'resizedTextbox';
+    titleInput.placeholder = 'Checklist Title';
+    titleInput.value = title;
+
+    // Add event listeners for focus and blur
+    titleInput.addEventListener("focus", function() {
+        titleInput.classList.remove("blurred");
+    });
+
+    titleInput.addEventListener("blur", function() {
+        titleInput.classList.add("blurred");
+    });
+
+    titleInput.classList.add("blurred"); // Initial state
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = 'deleteChecklistBtn';
+    deleteButton.textContent = 'X';
+    deleteButton.onclick = function() {
+        checklistContainer.remove();
+        saveChecklists();
+    };
+
+    checklistTitle.appendChild(titleInput);
+    checklistTitle.appendChild(deleteButton);
+    checklistContainer.appendChild(checklistTitle);
+
+    const taskInput = document.createElement("input");
+    taskInput.type = "text";
+    taskInput.id = "taskInput";
+    taskInput.placeholder = "Enter a new task";
+
+    const addBtn = document.createElement("button");
+    addBtn.id = "addBtn";
+    addBtn.textContent = "Add Task";
+    addBtn.onclick = function() {
+        addTask(checklistContainer);
+    };
+
+    const taskList = document.createElement("ul");
+    taskList.id = "taskList";
+
+    tasks.forEach(task => {
+        const listItem = document.createElement("li");
+        const taskTextNode = document.createElement("span");
+        taskTextNode.textContent = task.text;
+        if (task.completed) taskTextNode.classList.add("completed");
+        const closeBtn = document.createElement("span");
+        closeBtn.className = "close";
+        closeBtn.textContent = "×";
+        closeBtn.onclick = function() {
+            listItem.remove();
+            saveChecklists();
+        };
+        listItem.appendChild(taskTextNode);
+        listItem.appendChild(closeBtn);
+        taskList.appendChild(listItem);
+    });
+
+    checklistContainer.appendChild(taskInput);
+    checklistContainer.appendChild(addBtn);
+    checklistContainer.appendChild(taskList);
+
+    return checklistContainer;
+}
+
     </script>
 </body>
 </html>
+
